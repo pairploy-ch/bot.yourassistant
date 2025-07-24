@@ -297,26 +297,33 @@ export default function TaskManager() {
         </div>
 
         {/* Bottom Navigation */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200">
-          <div className="flex justify-center items-center py-4">
-            <div className="flex items-center space-x-8">
-              {/* Home Button */}
-              <button onClick={() => setCurrentView("home")} className="p-3">
-                <Home className="w-6 h-6 text-gray-400" />
-              </button>
+         <div
+            className="fixed bottom-0 left-0 right-0 bg-white border-gray-200 m-4"
+            style={{ borderRadius: "200px" }}
+          >
+            <div className="flex justify-center items-center py-2">
+              <div className="flex items-center space-x-8">
+                <button
+                  
+                  style={{ padding: "20px 40px", borderRadius: "200px" }}
+                  onClick={()=>setCurrentView("home")}
+                >
+                  <Home className="w-6 h-6 text-white" />
+                </button>
 
-              {/* Add Button - Active */}
-              <button className="bg-blue-500 p-4 rounded-2xl shadow-lg">
-                <Plus className="w-6 h-6 text-white" />
-              </button>
+                <button
+                  className="bg-blue-500 p-4"
+                  onClick={() => setCurrentView("addTask")}
+                >
+                  <Plus className="w-6 h-6 text-blue-600" />
+                </button>
 
-              {/* Menu Button */}
-              <button className="p-3">
-                <Menu className="w-6 h-6 text-gray-400" />
-              </button>
+                <button className="p-3">
+                  <Menu className="w-10 h-10 text-gray-400" />
+                </button>
+              </div>
             </div>
           </div>
-        </div>
 
         {/* Bottom padding */}
         <div className="h-24"></div>

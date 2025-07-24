@@ -1,5 +1,8 @@
+// app/layout.js
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+
+import NextAuthSessionProvider from "./providers/SessionProvider"; // path ตามจริง
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -22,7 +25,11 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <NextAuthSessionProvider>
+          <main className="min-h-screen flex flex-col m-auto" style={{ maxWidth: '600px'}}>
+            <div className="flex-1 md:p-8">{children}</div>
+          </main>
+        </NextAuthSessionProvider>
       </body>
     </html>
   );
