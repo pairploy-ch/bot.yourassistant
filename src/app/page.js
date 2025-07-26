@@ -16,6 +16,7 @@ import {
   where,
   orderBy,
   onSnapshot,
+  Timestamp
 } from "firebase/firestore";
 import { db } from "../app/firebase/config";
 
@@ -28,52 +29,103 @@ export default function TaskManager() {
   const [newTask, setNewTask] = useState({
     title: "",
     detail: "",
-    date: "02/07/2025",
-    time: "10:30:00",
-    repeat: "Daily",
+    date: "",
+    time: "",
+    repeat: "Never",
+    color: "blue",
+    status: "Upcoming",
   });
 
-  // const tasks = [
-  //   {
-  //     id: 1,
-  //     name: "Task1",
-  //     date: "12/07/25",
-  //     time: "12:00 PM",
-  //     status: "Upcoming",
-  //     autoRepeat: "10 min",
-  //     color: "blue",
-  //   },
-  //   {
-  //     id: 2,
-  //     name: "Task2",
-  //     date: "12/07/25",
-  //     time: "12:00 PM",
-  //     status: "Completed",
-  //     autoRepeat: "10 min",
-  //     color: "green",
-  //   },
-  //   {
-  //     id: 3,
-  //     name: "Task3",
-  //     date: "12/07/25",
-  //     time: "12:00 PM",
-  //     status: "Overdue",
-  //     autoRepeat: "10 min",
-  //     color: "red",
-  //   },
-  // ];
-
+  //tabs
   const tabs = ["All", "Upcoming", "Completed", "Overdue"];
 
+ const handleAddTask = async () => {
+  if (!session?.lineUserId) {
+    console.warn("No session or lineUserId");
+    return;
+  }
+
+  try {
+    const task = {
+      title: newTask.title || null,
+      detail: newTask.detail || null,
+      repeat: newTask.repeat || null,
+      status: newTask.status || null,
+      date: formatDateTime(newTask.date, newTask.time)|| null,
+      userId: session.lineUserId, // ✅ ใช้จาก session
+      userName: session.user.name,
+    };
+
+    const docRef = await addDoc(collection(db, "tasks"), task);
+    setCurrentView("home");
+    await fetchTasks();
+    console.log("เพิ่ม task แล้ว:", docRef.id);
+  } catch (error) {
+    console.error("เพิ่ม task ล้มเหลว:", error);
+  }
+};
+const formatDate = (dateValue, options = {}) => {
+  if (!dateValue) return 'No date';
+  
+  let date;
+  try {
+    if (typeof dateValue === 'string') {
+      if (dateValue.includes('at') && dateValue.includes('UTC+7')) {
+        // แก้ไขสำหรับรูปแบบ "July 10, 2025 at 12:45:00 PM UTC+7"
+        const cleanStr = dateValue
+          .replace(' at ', ' ')
+          .replace(' UTC+7', '');
+        date = new Date(cleanStr);
+      } else if (dateValue.includes('UTC+7')) {
+        const cleanStr = dateValue.replace(' UTC+7', '');
+        date = new Date(cleanStr);
+      } else {
+        date = new Date(dateValue);
+      }
+    } else {
+      // Handle other types...
+    }
+    
+    if (isNaN(date.getTime())) return 'Invalid Date';
+    
+    return date.toLocaleString('th-TH', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+      ...options
+    });
+  } catch (error) {
+    return 'Invalid Date';
+  }
+};
+ const formatDateTime = (date, time) => {
+    if (!date || !time) return '';
+    
+    // Create a Date object from the date and time inputs
+    const dateTime = new Date(`${date}T${time}`);
+    
+    // Format to match "July 26, 2025 at 10:54:54 PM UTC+7"
+    const options = {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+      second: '2-digit',
+      hour12: true,
+      timeZone: 'Asia/Bangkok' // UTC+7
+    };
+    
+    const formatted = dateTime.toLocaleDateString('en-US', options);
+    return `${formatted} UTC+7`;
+  };
   // ฟังก์ชันดึงข้อมูล tasks จาก Firestore
   const fetchTasks = async () => {
-    
     try {
       setLoading(true);
-  
+
       const querySnapshot = await getDocs(
         collection(db, "tasks"),
-        //  where("userId", "==", session.lineUserId)
+        where("userId", "==", session.lineUserId)
       );
       const tasksData = [];
 
@@ -117,6 +169,7 @@ export default function TaskManager() {
 
     return unsubscribe;
   };
+
   useEffect(() => {
     if (session?.lineUserId) {
       const unsubscribe = setupTasksListener();
@@ -124,7 +177,7 @@ export default function TaskManager() {
     }
   }, [session]);
 
-    useEffect(() => {
+  useEffect(() => {
     if (session?.lineUserId) {
       fetchTasks();
     }
@@ -161,158 +214,140 @@ export default function TaskManager() {
     }
   };
 
-  const handleAddTask = () => {
-    // Handle adding task logic here
-    console.log("Adding task:", newTask);
-    setCurrentView("home");
-  };
-
-  const handleCancel = () => {
-    setCurrentView("home");
-    setNewTask({
-      title: "",
-      detail: "",
-      date: "02/07/2025",
-      time: "10:30:00",
-      repeat: "Daily",
-    });
-  };
-
   // Add New Task View
   if (currentView === "addTask") {
     return (
-      <div className="min-h-screen bg-gray-100">
+      <div className="min-h-screen bg-white">
         {/* Header */}
         <div className="bg-white px-6 py-8">
           <h1 className="text-3xl font-bold text-gray-900">Add New Task</h1>
         </div>
 
         {/* Form */}
-        <div className="px-6 py-6 space-y-6">
-          {/* Title */}
-          <div>
-            <label className="block text-gray-700 text-sm font-medium mb-2">
-              Title
-            </label>
+      <div className="px-6 py-6 space-y-6 bg-white">
+        {/* Title */}
+        <div>
+          <label className="block text-gray-700 text-sm font-medium mb-2">
+            Title *
+          </label>
+          <input
+            type="text"
+            value={newTask.title}
+            onChange={(e) =>
+              setNewTask({ ...newTask, title: e.target.value })
+            }
+            placeholder="แจ้งเตือนส่งงาน"
+            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        {/* Detail */}
+        <div>
+          <label className="block text-gray-700 text-sm font-medium mb-2">
+            Detail *
+          </label>
+          <textarea
+            value={newTask.detail}
+            onChange={(e) =>
+              setNewTask({ ...newTask, detail: e.target.value })
+            }
+            placeholder="ส่ง Figma Version 1 ให้ บริษัท A"
+            rows={4}
+            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+          />
+        </div>
+
+        {/* Date */}
+        <div>
+          <label className="block text-gray-700 text-sm font-medium mb-2">
+            Date *
+          </label>
+          <div className="relative">
             <input
-              type="text"
-              value={newTask.title}
+              type="date"
+              value={newTask.date}
               onChange={(e) =>
-                setNewTask({ ...newTask, title: e.target.value })
+                setNewTask({ ...newTask, date: e.target.value })
               }
-              placeholder="แจ้งเตือนส่งงาน"
               className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
+        </div>
 
-          {/* Detail */}
-          <div>
-            <label className="block text-gray-700 text-sm font-medium mb-2">
-              Detail
-            </label>
-            <textarea
-              value={newTask.detail}
+        {/* Time */}
+        <div>
+          <label className="block text-gray-700 text-sm font-medium mb-2">
+            Time *
+          </label>
+          <div className="flex items-center space-x-3">
+            <input
+              type="time"
+              value={newTask.time}
               onChange={(e) =>
-                setNewTask({ ...newTask, detail: e.target.value })
+                setNewTask({ ...newTask, time: e.target.value })
               }
-              placeholder="ส่ง Figma Version 1 ให้ บริษัท A"
-              rows={4}
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-          </div>
-
-          {/* Date */}
-          <div>
-            <label className="block text-gray-700 text-sm font-medium mb-2">
-              Date
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                value={newTask.date}
-                onChange={(e) =>
-                  setNewTask({ ...newTask, date: e.target.value })
-                }
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
-              />
-              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-            </div>
-          </div>
-
-          {/* Time */}
-          <div>
-            <label className="block text-gray-700 text-sm font-medium mb-2">
-              Time
-            </label>
-            <div className="flex items-center space-x-3">
-              <input
-                type="text"
-                value={newTask.time}
-                onChange={(e) =>
-                  setNewTask({ ...newTask, time: e.target.value })
-                }
-                className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <span className="text-gray-600 font-medium">am</span>
-            </div>
-          </div>
-
-          {/* Repeat */}
-          <div>
-            <label className="block text-gray-700 text-sm font-medium mb-2">
-              Repeat
-            </label>
-            <div className="relative">
-              <select
-                value={newTask.repeat}
-                onChange={(e) =>
-                  setNewTask({ ...newTask, repeat: e.target.value })
-                }
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
-              >
-                <option value="Daily">Daily</option>
-                <option value="Weekly">Weekly</option>
-                <option value="Monthly">Monthly</option>
-                <option value="Never">Never</option>
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-            </div>
-          </div>
-
-          {/* Buttons */}
-          <div className="flex space-x-4 pt-4">
-            <button
-              onClick={handleAddTask}
-              className="flex-1 bg-blue-500 text-white py-3 rounded-lg font-medium hover:bg-blue-600 transition-colors"
-            >
-              Add
-            </button>
-            <button
-              onClick={handleCancel}
-              className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-300 transition-colors"
-            >
-              Cancel
-            </button>
+          
           </div>
         </div>
 
-        {/* Bottom Navigation */}
-         <div
+        {/* Repeat */}
+        <div>
+          <label className="block text-gray-700 text-sm font-medium mb-2">
+            Repeat
+          </label>
+          <div className="relative">
+            <select
+              value={newTask.repeat}
+              onChange={(e) =>
+                setNewTask({ ...newTask, repeat: e.target.value })
+              }
+              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+            >
+              <option value="Daily">Daily</option>
+              <option value="Weekly">Weekly</option>
+              <option value="Monthly">Monthly</option>
+              <option value="Never">Never</option>
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+          </div>
+        </div>
+
+        {/* Buttons */}
+        <div className="flex space-x-4 pt-4">
+          <button
+            onClick={handleAddTask}
+            className="flex-1 bg-blue-500 text-white py-3 rounded-lg font-medium hover:bg-blue-600 transition-colors"
+          >
+            Add Task
+          </button>
+          <button 
+      
+            className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+
+           {/* Bottom Navigation */}
+          <div
             className="fixed bottom-0 left-0 right-0 bg-white border-gray-200 m-4"
             style={{ borderRadius: "200px" }}
           >
             <div className="flex justify-center items-center py-2">
               <div className="flex items-center space-x-8">
                 <button
-                  
+                  className="bg-blue-500 p-4"
                   style={{ padding: "20px 40px", borderRadius: "200px" }}
-                  onClick={()=>setCurrentView("home")}
+                  onClick={() => setCurrentView("home")}
                 >
                   <Home className="w-6 h-6 text-white" />
                 </button>
 
                 <button
-                  className="bg-blue-500 p-4"
+                  className="bg-blue-100 p-3 rounded-xl"
                   onClick={() => setCurrentView("addTask")}
                 >
                   <Plus className="w-6 h-6 text-blue-600" />
@@ -326,7 +361,7 @@ export default function TaskManager() {
           </div>
 
         {/* Bottom padding */}
-        <div className="h-24"></div>
+        <div className="h-24 bg-white"></div>
       </div>
     );
   }
@@ -408,7 +443,10 @@ export default function TaskManager() {
                 >
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900 mb-2" style={{fontSize: '20px'}}>
+                      <h3
+                        className="font-semibold text-gray-900 mb-2"
+                        style={{ fontSize: "20px" }}
+                      >
                         {task.title}
                       </h3>
                       {task.detail && (
@@ -419,7 +457,7 @@ export default function TaskManager() {
                       <div className="flex items-center text-gray-600 text-sm mb-1">
                         <Calendar className="w-4 h-4 mr-2" />
                         <span>
-                          {task.date.toDate().toLocaleString()}
+                     {formatDate(task.date)} น.
                         </span>
                       </div>
                       <div className="flex items-center text-gray-500 text-sm">
@@ -471,7 +509,7 @@ export default function TaskManager() {
                 <button
                   className="bg-blue-500 p-4"
                   style={{ padding: "20px 40px", borderRadius: "200px" }}
-                  onClick={()=>setCurrentView("home")}
+                  onClick={() => setCurrentView("home")}
                 >
                   <Home className="w-6 h-6 text-white" />
                 </button>
@@ -495,7 +533,7 @@ export default function TaskManager() {
       ) : (
         <div className="flex items-center justify-center min-h-screen">
           <button
-            style={{ cursor: 'pointer'}}
+            style={{ cursor: "pointer" }}
             onClick={() => signIn("line")}
             className="bg-green-500 text-white px-6 py-3 rounded-lg font-medium"
           >
