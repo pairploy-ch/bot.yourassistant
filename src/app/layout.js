@@ -1,12 +1,21 @@
 // app/layout.js
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { Kanit } from 'next/font/google';
 
 import NextAuthSessionProvider from "./providers/SessionProvider"; // path ตามจริง
 
+const kanit = Kanit({
+  subsets: ['thai', 'latin'], // รองรับภาษาไทย
+  weight: ['400', '500', '700'], // เลือกน้ำหนักที่ต้องใช้
+  variable: '--font-kanit', // สำหรับใช้กับ Tailwind (optional)
+});
+
+
+
 const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+  variable: "--font-kanit",
+  subsets: ['thai', 'latin'],
 });
 
 const geistMono = Geist_Mono({
@@ -21,9 +30,9 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" className={kanit.className}>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+       
       >
         <NextAuthSessionProvider>
           <main className="min-h-screen flex flex-col m-auto" style={{ maxWidth: '600px'}}>

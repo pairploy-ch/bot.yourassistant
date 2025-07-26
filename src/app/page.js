@@ -419,7 +419,7 @@ export default function TaskManager() {
                       <div className="flex items-center text-gray-600 text-sm mb-1">
                         <Calendar className="w-4 h-4 mr-2" />
                         <span>
-                          {task.date} - {task.time}
+                          {task.date.toDate().toLocaleString()}
                         </span>
                       </div>
                       <div className="flex items-center text-gray-500 text-sm">
