@@ -13,10 +13,10 @@ const kanit = Kanit({
 
 
 
-const geistSans = Geist({
-  variable: "--font-kanit",
-  subsets: ['thai', 'latin'],
-});
+// const geistSans = Geist({
+//   variable: "--font-kanit",
+//   subsets: ['thai', 'latin'],
+// });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
